@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: odontocare_dev
       POSTGRES_DB: odontocare
     ports:
-      - "5432:5432"
+      - "55432:5432"
     volumes:
       - odontocare_postgres_data:/var/lib/postgresql/data
     healthcheck:
