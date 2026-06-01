@@ -1,47 +1,36 @@
 import {
   Bell,
-  CalendarDays,
   ChevronDown,
-  CircleDollarSign,
-  ClipboardList,
   Command,
-  FileBarChart,
-  LayoutDashboard,
   Menu,
   Moon,
-  Package,
   Search,
-  Settings,
   SmilePlus,
   Stethoscope,
   Sun,
-  UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { appSections, type AppSectionId } from "@/features/navigation/sections";
 import { cn } from "@/lib/utils";
 
 type AppShellProps = {
+  activeSection: AppSectionId;
   children: ReactNode;
   darkMode: boolean;
+  onSectionChange: (section: AppSectionId) => void;
   onToggleTheme: () => void;
 };
 
-const navigation = [
-  { label: "Dashboard", icon: LayoutDashboard, active: true },
-  { label: "Pacientes", icon: UsersRound },
-  { label: "Agenda", icon: CalendarDays },
-  { label: "Odontograma", icon: SmilePlus },
-  { label: "Tratamientos", icon: ClipboardList },
-  { label: "Pagos", icon: CircleDollarSign },
-  { label: "Inventario", icon: Package },
-  { label: "Reportes", icon: FileBarChart },
-  { label: "Configuracion", icon: Settings },
-];
-
-export function AppShell({ children, darkMode, onToggleTheme }: AppShellProps) {
+export function AppShell({
+  activeSection,
+  children,
+  darkMode,
+  onSectionChange,
+  onToggleTheme,
+}: AppShellProps) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <aside className="hidden w-[248px] shrink-0 border-r border-border bg-card/82 px-4 py-6 backdrop-blur-xl lg:block">
@@ -60,15 +49,16 @@ export function AppShell({ children, darkMode, onToggleTheme }: AppShellProps) {
         </div>
 
         <nav className="mt-9 space-y-1.5">
-          {navigation.map((item) => (
+          {appSections.map((item) => (
             <button
               className={cn(
                 "flex h-12 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors",
-                item.active
+                activeSection === item.id
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-muted hover:text-foreground",
               )}
               key={item.label}
+              onClick={() => onSectionChange(item.id)}
               type="button"
             >
               <item.icon className="h-5 w-5" />
