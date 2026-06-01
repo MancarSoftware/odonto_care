@@ -1,29 +1,68 @@
 import { useEffect, useState } from "react";
 
 import { AppShell } from "./components/layout/AppShell";
+import { LoginPage } from "./features/auth/LoginPage";
+import type { AuthenticatedUser, LoginResponse } from "./features/auth/types";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import type { AppSectionId } from "./features/navigation/sections";
 import { PatientsPage } from "./features/patients/PatientsPage";
 import { PlaceholderPage } from "./features/placeholder/PlaceholderPage";
 
+const TOKEN_STORAGE_KEY = "odontocare.accessToken";
+const USER_STORAGE_KEY = "odontocare.user";
+
 export function App() {
   const [activeSection, setActiveSection] =
     useState<AppSectionId>("dashboard");
   const [darkMode, setDarkMode] = useState(false);
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem(TOKEN_STORAGE_KEY),
+  );
+  const [user, setUser] = useState<AuthenticatedUser | null>(() => {
+    const stored = localStorage.getItem(USER_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as AuthenticatedUser) : null;
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
+  function handleLogin(response: LoginResponse) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, response.accessToken);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+    setToken(response.accessToken);
+    setUser(response.user);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    setToken(null);
+    setUser(null);
+    setActiveSection("dashboard");
+  }
+
+  if (!token || !user) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
     <AppShell
       activeSection={activeSection}
       darkMode={darkMode}
+      onLogout={handleLogout}
       onSectionChange={setActiveSection}
       onToggleTheme={() => setDarkMode((v) => !v)}
+      user={user}
     >
       {activeSection === "dashboard" && <DashboardPage />}
-      {activeSection === "patients" && <PatientsPage />}
+      {activeSection === "patients" && (
+        <PatientsPage
+          onNavigate={setActiveSection}
+          onUnauthorized={handleLogout}
+          token={token}
+        />
+      )}
       {activeSection !== "dashboard" && activeSection !== "patients" && (
         <PlaceholderPage sectionId={activeSection} />
       )}

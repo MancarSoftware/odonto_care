@@ -8,11 +8,13 @@ import {
   SmilePlus,
   Stethoscope,
   Sun,
+  LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { AuthenticatedUser } from "@/features/auth/types";
 import { appSections, type AppSectionId } from "@/features/navigation/sections";
 import { cn } from "@/lib/utils";
 
@@ -20,16 +22,20 @@ type AppShellProps = {
   activeSection: AppSectionId;
   children: ReactNode;
   darkMode: boolean;
+  onLogout: () => void;
   onSectionChange: (section: AppSectionId) => void;
   onToggleTheme: () => void;
+  user: AuthenticatedUser;
 };
 
 export function AppShell({
   activeSection,
   children,
   darkMode,
+  onLogout,
   onSectionChange,
   onToggleTheme,
+  user,
 }: AppShellProps) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -113,16 +119,21 @@ export function AppShell({
             </Button>
             <div className="ml-1 flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent/12 text-sm font-bold text-accent">
-                CL
+                {getInitials(user.fullName)}
               </div>
               <div className="hidden sm:block">
                 <div className="text-sm font-semibold text-foreground">
-                  Dr. Carlos Lopez
+                  {user.fullName}
                 </div>
-                <div className="text-xs text-muted-foreground">Odontologo</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatRole(user.role)}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </div>
+            <Button aria-label="Cerrar sesion" onClick={onLogout} size="icon" variant="ghost">
+              <LogOut className="h-5 w-5" />
+            </Button>
           </div>
         </header>
 
@@ -130,4 +141,24 @@ export function AppShell({
       </div>
     </div>
   );
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function formatRole(role: AuthenticatedUser["role"]): string {
+  const labels: Record<AuthenticatedUser["role"], string> = {
+    ADMIN: "Administrador",
+    DENTIST: "Odontologo",
+    RECEPTION: "Recepcion",
+  };
+
+  return labels[role];
 }
