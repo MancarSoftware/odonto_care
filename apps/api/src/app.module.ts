@@ -7,6 +7,7 @@ import { AppointmentsModule } from "./modules/appointments/appointments.module";
 import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BillingModule } from "./modules/billing/billing.module";
+import { ClinicalHistoryModule } from "./modules/clinical-history/clinical-history.module";
 import { HealthModule } from "./modules/health/health.module";
 import { MediaModule } from "./modules/media/media.module";
 import { OdontogramModule } from "./modules/odontogram/odontogram.module";
@@ -26,6 +27,7 @@ import { UsersModule } from "./modules/users/users.module";
     UsersModule,
     AuthModule,
     PatientsModule,
+    ClinicalHistoryModule,
     AppointmentsModule,
     OdontogramModule,
     BillingModule,

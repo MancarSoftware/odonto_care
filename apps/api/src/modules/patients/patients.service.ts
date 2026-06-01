@@ -71,11 +71,19 @@ export class PatientsService {
         clinicalEntries: {
           orderBy: { createdAt: "desc" },
           select: {
+            author: {
+              select: {
+                fullName: true,
+                id: true,
+                role: true,
+              },
+            },
             id: true,
-            title: true,
-            type: true,
             notes: true,
             createdAt: true,
+            title: true,
+            type: true,
+            updatedAt: true,
           },
           take: 20,
           where: { deletedAt: null },

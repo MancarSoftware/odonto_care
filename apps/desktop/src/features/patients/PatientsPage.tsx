@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   SmilePlus,
+  Stethoscope,
+  Trash2,
   UserRound,
   UsersRound,
   X,
@@ -26,12 +28,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { AppSectionId } from "@/features/navigation/sections";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type PatientStatus = "active" | "follow-up" | "alert";
 type PatientFilter = "all" | "clinical-alerts" | "with-contact" | "missing-contact";
 type DetailPanel = "summary" | "history";
+type ClinicalEntryType =
+  | "CONSULTATION"
+  | "EVOLUTION"
+  | "PRESCRIPTION"
+  | "PROCEDURE"
+  | "NOTE";
 
 type ApiPatient = {
   id: string;
@@ -51,11 +59,17 @@ type ApiPatient = {
 };
 
 type ApiClinicalEntry = {
+  author: {
+    fullName: string;
+    id: string;
+    role: string;
+  } | null;
   id: string;
   title: string;
   type: string;
   notes: string;
   createdAt: string;
+  updatedAt: string;
 };
 
 type ApiPatientDetail = ApiPatient & {
@@ -83,6 +97,12 @@ type PatientFormState = {
   phone: string;
 };
 
+type ClinicalEntryFormState = {
+  notes: string;
+  title: string;
+  type: ClinicalEntryType;
+};
+
 type PatientsPageProps = {
   onNavigate: (section: AppSectionId) => void;
   onUnauthorized: () => void;
@@ -106,6 +126,12 @@ const emptyPatientForm: PatientFormState = {
   phone: "",
 };
 
+const emptyClinicalEntryForm: ClinicalEntryFormState = {
+  notes: "",
+  title: "",
+  type: "EVOLUTION",
+};
+
 const statusMeta: Record<
   PatientStatus,
   { label: string; tone: "default" | "success" | "warning" | "danger" }
@@ -122,6 +148,14 @@ const filterLabels: Record<PatientFilter, string> = {
   "with-contact": "Con contacto",
 };
 
+const clinicalEntryLabels: Record<ClinicalEntryType, string> = {
+  CONSULTATION: "Consulta",
+  EVOLUTION: "Evolucion",
+  NOTE: "Nota",
+  PRESCRIPTION: "Prescripcion",
+  PROCEDURE: "Procedimiento",
+};
+
 export function PatientsPage({
   onNavigate,
   onUnauthorized,
@@ -130,6 +164,7 @@ export function PatientsPage({
   const [activeFilter, setActiveFilter] = useState<PatientFilter>("all");
   const [detailPanel, setDetailPanel] = useState<DetailPanel>("summary");
   const [error, setError] = useState<string | null>(null);
+  const [isClinicalEntryOpen, setIsClinicalEntryOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -224,6 +259,52 @@ export function PatientsPage({
     setIsCreateOpen(false);
     await loadPatients(query);
     setSelectedPatientId(createdPatient.id);
+  }
+
+  async function handleCreateClinicalEntry(form: ClinicalEntryFormState) {
+    if (!selectedPatientId) {
+      return;
+    }
+
+    setError(null);
+
+    await apiPost<ApiClinicalEntry>(
+      `/patients/${selectedPatientId}/clinical-history`,
+      {
+        notes: form.notes.trim(),
+        title: form.title.trim(),
+        type: form.type,
+      },
+      token,
+    );
+
+    setIsClinicalEntryOpen(false);
+    setDetailPanel("history");
+    await loadPatientDetail(selectedPatientId);
+  }
+
+  async function handleDeleteClinicalEntry(entryId: string) {
+    if (!selectedPatientId) {
+      return;
+    }
+
+    const confirmed = window.confirm("Eliminar esta entrada del historial clinico?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      await apiDelete<{ id: string }>(
+        `/patients/${selectedPatientId}/clinical-history/${entryId}`,
+        token,
+      );
+      await loadPatientDetail(selectedPatientId);
+    } catch (requestError) {
+      handleRequestError(requestError);
+    }
   }
 
   function handleRequestError(requestError: unknown) {
@@ -416,6 +497,8 @@ export function PatientsPage({
         {selectedPatient ? (
           <PatientSummary
             detailPanel={detailPanel}
+            onCreateClinicalEntry={() => setIsClinicalEntryOpen(true)}
+            onDeleteClinicalEntry={handleDeleteClinicalEntry}
             onDetailPanelChange={setDetailPanel}
             onNavigate={onNavigate}
             patient={selectedPatient}
@@ -441,6 +524,14 @@ export function PatientsPage({
         <CreatePatientModal
           onClose={() => setIsCreateOpen(false)}
           onCreate={handleCreatePatient}
+        />
+      )}
+
+      {isClinicalEntryOpen && selectedPatient && (
+        <ClinicalEntryModal
+          onClose={() => setIsClinicalEntryOpen(false)}
+          onCreate={handleCreateClinicalEntry}
+          patientName={formatPatientName(selectedPatient)}
         />
       )}
     </div>
@@ -472,11 +563,15 @@ function PatientStat({ icon: Icon, label, tone, value }: PatientStatProps) {
 
 function PatientSummary({
   detailPanel,
+  onCreateClinicalEntry,
+  onDeleteClinicalEntry,
   onDetailPanelChange,
   onNavigate,
   patient,
 }: {
   detailPanel: DetailPanel;
+  onCreateClinicalEntry: () => void;
+  onDeleteClinicalEntry: (entryId: string) => Promise<void>;
   onDetailPanelChange: (panel: DetailPanel) => void;
   onNavigate: (section: AppSectionId) => void;
   patient: ApiPatientDetail;
@@ -540,13 +635,23 @@ function PatientSummary({
             <div className="text-sm font-bold text-foreground">
               {detailPanel === "summary" ? "Alertas" : "Historial clinico"}
             </div>
-            <ShieldCheck className="h-4 w-4 text-success" />
+            {detailPanel === "history" ? (
+              <Button onClick={onCreateClinicalEntry} size="sm" variant="outline">
+                <Plus className="h-4 w-4" />
+                Nueva evolucion
+              </Button>
+            ) : (
+              <ShieldCheck className="h-4 w-4 text-success" />
+            )}
           </div>
 
           {detailPanel === "summary" ? (
             <AlertsList patient={patient} />
           ) : (
-            <ClinicalHistory entries={patient.clinicalEntries} />
+            <ClinicalHistory
+              entries={patient.clinicalEntries}
+              onDelete={onDeleteClinicalEntry}
+            />
           )}
         </div>
 
@@ -605,30 +710,54 @@ function AlertsList({ patient }: { patient: ApiPatientDetail }) {
   );
 }
 
-function ClinicalHistory({ entries }: { entries: ApiClinicalEntry[] }) {
+function ClinicalHistory({
+  entries,
+  onDelete,
+}: {
+  entries: ApiClinicalEntry[];
+  onDelete: (entryId: string) => Promise<void>;
+}) {
   if (!entries.length) {
     return (
-      <div className="rounded-lg border border-border bg-card px-4 py-5 text-sm text-muted-foreground">
+      <div className="rounded-lg border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+        <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Stethoscope className="h-5 w-5" />
+        </div>
         Sin evoluciones clinicas registradas.
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="relative space-y-3">
+      <div className="absolute left-4 top-3 h-[calc(100%-1.5rem)] w-px bg-border" />
       {entries.map((entry) => (
         <div
-          className="rounded-lg border border-border bg-card px-3 py-3"
+          className="relative ml-9 rounded-lg border border-border bg-card px-3 py-3"
           key={entry.id}
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-bold text-foreground">{entry.title}</div>
-            <div className="text-xs text-muted-foreground">
-              {formatShortDate(entry.createdAt)}
+          <div className="absolute -left-[2.12rem] top-4 h-3 w-3 rounded-full border-2 border-card bg-primary" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold text-foreground">
+                {entry.title}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs font-semibold text-muted-foreground">
+                <span className="text-primary">
+                  {formatClinicalEntryType(entry.type)}
+                </span>
+                <span>{formatShortDate(entry.createdAt)}</span>
+                <span>{entry.author?.fullName ?? "Sin autor"}</span>
+              </div>
             </div>
-          </div>
-          <div className="mt-1 text-xs font-semibold text-primary">
-            {entry.type}
+            <Button
+              aria-label="Eliminar entrada"
+              onClick={() => void onDelete(entry.id)}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {entry.notes}
@@ -826,6 +955,127 @@ function CreatePatientModal({
   );
 }
 
+function ClinicalEntryModal({
+  onClose,
+  onCreate,
+  patientName,
+}: {
+  onClose: () => void;
+  onCreate: (form: ClinicalEntryFormState) => Promise<void>;
+  patientName: string;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<ClinicalEntryFormState>(emptyClinicalEntryForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    if (!form.title.trim() || !form.notes.trim()) {
+      setError("Titulo y observacion son obligatorios");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await onCreate(form);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "No se pudo registrar la evolucion",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function updateField<K extends keyof ClinicalEntryFormState>(
+    field: K,
+    value: ClinicalEntryFormState[K],
+  ) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/20 px-4 py-8 backdrop-blur-sm">
+      <motion.div
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-[680px] rounded-lg border border-border bg-card shadow-soft"
+        initial={{ opacity: 0, scale: 0.98, y: 8 }}
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <div className="text-lg font-extrabold text-foreground">
+              Nueva evolucion clinica
+            </div>
+            <div className="text-sm text-muted-foreground">{patientName}</div>
+          </div>
+          <Button aria-label="Cerrar" onClick={onClose} size="icon" variant="ghost">
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <form className="space-y-5 p-6" onSubmit={handleSubmit}>
+          <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+            <Field label="Tipo">
+              <select
+                className="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                onChange={(event) =>
+                  updateField("type", event.target.value as ClinicalEntryType)
+                }
+                value={form.type}
+              >
+                {(Object.keys(clinicalEntryLabels) as ClinicalEntryType[]).map(
+                  (type) => (
+                    <option key={type} value={type}>
+                      {clinicalEntryLabels[type]}
+                    </option>
+                  ),
+                )}
+              </select>
+            </Field>
+
+            <Field label="Titulo">
+              <Input
+                onChange={(event) => updateField("title", event.target.value)}
+                placeholder="Control, evolucion, procedimiento..."
+                value={form.title}
+              />
+            </Field>
+          </div>
+
+          <Field label="Observacion clinica">
+            <textarea
+              className="min-h-36 w-full resize-none rounded-lg border border-border bg-card px-3 py-3 text-sm leading-6 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+              onChange={(event) => updateField("notes", event.target.value)}
+              placeholder="Describe hallazgos, evolucion, conducta clinica y recomendaciones..."
+              value={form.notes}
+            />
+          </Field>
+
+          {error && (
+            <div className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-sm font-medium text-danger">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 border-t border-border pt-5">
+            <Button onClick={onClose} type="button" variant="outline">
+              Cancelar
+            </Button>
+            <Button disabled={isSubmitting} type="submit">
+              {isSubmitting ? "Guardando..." : "Guardar evolucion"}
+            </Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 function Field({
   children,
   className,
@@ -991,6 +1241,10 @@ function formatGender(gender: ApiPatient["gender"]): string {
   };
 
   return labels[gender];
+}
+
+function formatClinicalEntryType(type: string): string {
+  return clinicalEntryLabels[type as ClinicalEntryType] ?? type;
 }
 
 function formatShortDate(value: string): string {
