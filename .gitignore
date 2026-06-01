@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-electron/
+out/
+build/
+.env
+.env.local
+*.log
+coverage/
+.DS_Store
+Thumbs.db
+apps/desktop/release/

@@ -1,0 +1,24 @@
+{
+  "name": "odontocare",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n API,DESKTOP -c cyan,magenta \"npm run dev -w @odontocare/api\" \"npm run dev -w @odontocare/desktop\"",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run prisma:generate -w @odontocare/database",
+    "db:migrate": "npm run prisma:migrate -w @odontocare/database",
+    "db:studio": "npm run prisma:studio -w @odontocare/database",
+    "db:seed": "npm run prisma:seed -w @odontocare/database"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.1",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3"
+  }
+}

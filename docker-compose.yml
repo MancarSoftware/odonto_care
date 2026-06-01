@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: odontocare-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: odontocare
+      POSTGRES_PASSWORD: odontocare_dev
+      POSTGRES_DB: odontocare
+    ports:
+      - "5432:5432"
+    volumes:
+      - odontocare_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odontocare -d odontocare"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  odontocare_postgres_data:
