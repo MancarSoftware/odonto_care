@@ -21,6 +21,20 @@ const appointmentSelect = {
       code: true,
       firstName: true,
       lastName: true,
+      payments: {
+        select: {
+          amount: true,
+          status: true,
+        },
+        where: { deletedAt: null },
+      },
+      treatments: {
+        select: {
+          estimatedCost: true,
+          status: true,
+        },
+        where: { deletedAt: null },
+      },
     },
   },
   doctor: {
@@ -43,11 +57,11 @@ export class AppointmentsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  findRange(query: AppointmentRangeQuery) {
+  async findRange(query: AppointmentRangeQuery) {
     const from = query.from ? new Date(query.from) : startOfToday();
     const to = query.to ? new Date(query.to) : addDays(from, 7);
 
-    return this.prisma.appointment.findMany({
+    const appointments = await this.prisma.appointment.findMany({
       orderBy: { startsAt: "asc" },
       select: appointmentSelect,
       where: {
@@ -55,6 +69,40 @@ export class AppointmentsService {
         startsAt: { gte: from },
         endsAt: { lte: to },
       },
+    });
+
+    return appointments.map((appointment) => {
+      const estimatedAmount = appointment.patient.treatments.reduce(
+        (total, treatment) => total + toNumber(treatment.estimatedCost),
+        0,
+      );
+      const collectedAmount = appointment.patient.payments
+        .filter((payment) => payment.status === "PAID" || payment.status === "PARTIAL")
+        .reduce((total, payment) => total + toNumber(payment.amount), 0);
+      const pendingPayments = appointment.patient.payments.filter(
+        (payment) => payment.status === "PENDING",
+      );
+      const pendingPaymentAmount = pendingPayments.reduce(
+        (total, payment) => total + toNumber(payment.amount),
+        0,
+      );
+      const pendingAmount = Math.max(
+        estimatedAmount - collectedAmount,
+        pendingPaymentAmount,
+        0,
+      );
+      const { payments: _payments, treatments: _treatments, ...patient } =
+        appointment.patient;
+
+      return {
+        ...appointment,
+        billingSummary: {
+          hasPendingBalance: pendingAmount > 0,
+          pendingAmount,
+          pendingPayments: pendingPayments.length,
+        },
+        patient,
+      };
     });
   }
 
@@ -197,4 +245,13 @@ function addDays(date: Date, days: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+function toNumber(value: Prisma.Decimal | number | string | null): number {
+  if (value === null) {
+    return 0;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import {
   CalendarDays,
   CheckCircle2,
+  CircleDollarSign,
   Clock3,
   Plus,
   RotateCcw,
@@ -35,6 +36,11 @@ type ApiAppointment = {
   endsAt: string;
   color: string | null;
   notes: string | null;
+  billingSummary?: {
+    hasPendingBalance: boolean;
+    pendingAmount: number;
+    pendingPayments: number;
+  };
   patient: ApiPatient;
   doctor: { fullName: string; id: string } | null;
 };
@@ -270,11 +276,11 @@ export function AppointmentsPage({
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto pb-5">
           {isLoading ? (
             <CalendarSkeleton />
           ) : (
-            <div className="grid gap-3 lg:grid-cols-7">
+            <div className="grid min-w-[1120px] grid-cols-7 gap-3">
               {weekDays.map((day) => (
                 <DayColumn
                   appointments={appointments.filter((appointment) =>
@@ -315,14 +321,14 @@ function DayColumn({
   onStatusChange: (id: string, status: AppointmentStatus) => Promise<void>;
 }) {
   return (
-    <div className="min-h-[520px] rounded-lg border border-border bg-muted/25 p-3">
-      <div className="mb-3">
+    <div className="min-h-[540px] min-w-0 rounded-lg border border-border bg-muted/25 p-3">
+      <div className="mb-4 flex items-center justify-between">
         <div className="text-xs font-bold uppercase text-muted-foreground">
           {formatWeekDay(day)}
         </div>
         <div
           className={cn(
-            "mt-1 grid h-9 w-9 place-items-center rounded-lg text-sm font-extrabold",
+            "grid h-9 w-9 place-items-center rounded-lg text-sm font-extrabold",
             isSameDate(day, new Date())
               ? "bg-primary text-primary-foreground"
               : "bg-card text-foreground",
@@ -334,78 +340,97 @@ function DayColumn({
 
       <div className="space-y-2">
         {appointments.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border bg-card/60 px-3 py-6 text-center text-xs font-semibold text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-card/60 px-3 py-8 text-center text-xs font-semibold text-muted-foreground">
             Sin citas
           </div>
         )}
 
-        {appointments.map((appointment, index) => (
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg border border-border bg-card p-3 shadow-sm"
-            initial={{ opacity: 0, y: 8 }}
-            key={appointment.id}
-            transition={{ delay: index * 0.025, duration: 0.2 }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-bold text-foreground">
-                  {appointment.title}
+        {appointments.map((appointment, index) => {
+          const hasPendingBalance =
+            appointment.billingSummary?.hasPendingBalance ?? false;
+
+          return (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-lg border border-border bg-card p-3 shadow-sm transition-colors hover:border-primary/30"
+              initial={{ opacity: 0, y: 8 }}
+              key={appointment.id}
+              transition={{ delay: index * 0.025, duration: 0.2 }}
+            >
+              <div className="space-y-3">
+                <div className="min-w-0">
+                  <div className="line-clamp-2 text-sm font-extrabold leading-5 text-foreground">
+                    {appointment.title}
+                  </div>
+                  <div className="mt-2 inline-flex whitespace-nowrap rounded-md bg-muted px-2 py-1 text-xs font-bold text-muted-foreground">
+                    {formatTimeRange(appointment.startsAt, appointment.endsAt)}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs font-semibold text-muted-foreground">
-                  {formatTime(appointment.startsAt)} - {formatTime(appointment.endsAt)}
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={statusTone[appointment.status]}>
+                    {statusLabels[appointment.status]}
+                  </Badge>
+                  {hasPendingBalance && (
+                    <Badge variant="warning">
+                      <CircleDollarSign className="mr-1 h-3.5 w-3.5" />
+                      {formatCurrency(
+                        appointment.billingSummary?.pendingAmount ?? 0,
+                      )}
+                    </Badge>
+                  )}
                 </div>
+
+                <div className="truncate text-xs font-bold text-foreground">
+                  {formatPatientName(appointment.patient)}
+                </div>
+                {appointment.notes && (
+                  <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                    {appointment.notes}
+                  </p>
+                )}
               </div>
-              <Badge variant={statusTone[appointment.status]}>
-                {statusLabels[appointment.status]}
-              </Badge>
-            </div>
 
-            <div className="mt-3 truncate text-xs font-semibold text-muted-foreground">
-              {formatPatientName(appointment.patient)}
-            </div>
-            {appointment.notes && (
-              <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                {appointment.notes}
-              </p>
-            )}
-
-            <div className="mt-3 flex justify-end gap-1">
-              {appointment.status !== "CONFIRMED" && (
+              <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
+                {appointment.status !== "CONFIRMED" && (
+                  <Button
+                    aria-label="Confirmar cita"
+                    className="h-8 w-8"
+                    onClick={() =>
+                      void onStatusChange(appointment.id, "CONFIRMED")
+                    }
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                  </Button>
+                )}
+                {appointment.status !== "COMPLETED" && (
+                  <Button
+                    aria-label="Marcar atendida"
+                    className="h-8 w-8"
+                    onClick={() =>
+                      void onStatusChange(appointment.id, "COMPLETED")
+                    }
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <Clock3 className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
-                  aria-label="Confirmar cita"
-                  onClick={() =>
-                    void onStatusChange(appointment.id, "CONFIRMED")
-                  }
+                  aria-label="Eliminar cita"
+                  className="h-8 w-8"
+                  onClick={() => void onDelete(appointment.id)}
                   size="icon"
                   variant="ghost"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>
-              )}
-              {appointment.status !== "COMPLETED" && (
-                <Button
-                  aria-label="Marcar atendida"
-                  onClick={() =>
-                    void onStatusChange(appointment.id, "COMPLETED")
-                  }
-                  size="icon"
-                  variant="ghost"
-                >
-                  <Clock3 className="h-4 w-4" />
-                </Button>
-              )}
-              <Button
-                aria-label="Eliminar cita"
-                onClick={() => void onDelete(appointment.id)}
-                size="icon"
-                variant="ghost"
-              >
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
-          </motion.div>
-        ))}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
@@ -589,7 +614,7 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 
 function CalendarSkeleton() {
   return (
-    <div className="grid gap-3 lg:grid-cols-7">
+    <div className="grid min-w-[1120px] grid-cols-7 gap-3">
       {Array.from({ length: 7 }).map((_, index) => (
         <div
           className="min-h-[520px] animate-pulse rounded-lg border border-border bg-muted/35 p-3"
@@ -696,9 +721,21 @@ function formatWeekDay(date: Date): string {
   return new Intl.DateTimeFormat("es-EC", { weekday: "short" }).format(date);
 }
 
-function formatTime(value: string): string {
+function formatTimeRange(startsAt: string, endsAt: string): string {
+  return `${formatClock(startsAt)} - ${formatClock(endsAt)}`;
+}
+
+function formatClock(value: string): string {
   return new Intl.DateTimeFormat("es-EC", {
     hour: "2-digit",
+    hour12: false,
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("es-EC", {
+    currency: "USD",
+    style: "currency",
+  }).format(value);
 }
