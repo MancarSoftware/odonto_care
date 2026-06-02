@@ -594,6 +594,8 @@ function ToothShape({
   const crownTop = row === "upper" ? 30 : 0;
   const crownBottom = crownTop + crownHeight;
   const rootStart = row === "upper" ? crownTop + 2 : crownBottom - 2;
+  const toothTypeColor = getToothTypeColor(toothNumber);
+  const crownFill = status === "HEALTHY" ? toothTypeColor : meta.color;
 
   return (
     <g
@@ -660,7 +662,7 @@ function ToothShape({
               ? `M${crownX + 3} ${crownTop + 12} C${crownX + 4} ${crownTop + 1}, ${crownX + crownWidth - 4} ${crownTop + 1}, ${crownX + crownWidth - 3} ${crownTop + 12} L${crownX + crownWidth / 2} ${crownBottom} Z`
               : `M${crownX + 4} ${crownTop + 10} C${crownX + 7} ${crownTop}, ${crownX + crownWidth - 7} ${crownTop}, ${crownX + crownWidth - 4} ${crownTop + 10} L${crownX + crownWidth - 2} ${crownTop + 28} C${crownX + crownWidth - 4} ${crownBottom}, ${crownX + 4} ${crownBottom}, ${crownX + 2} ${crownTop + 28} Z`
           }
-          fill={meta.color}
+          fill={crownFill}
           stroke={selected ? "hsl(var(--primary))" : "hsl(var(--border))"}
           strokeWidth={selected ? 3 : 2}
         />
@@ -712,6 +714,24 @@ function TextLabel({ value, x, y }: { value: string; x: number; y: number }) {
       {value}
     </text>
   );
+}
+
+function getToothTypeColor(toothNumber: number): string {
+  const position = toothNumber % 10;
+
+  if (position <= 2) {
+    return "#fbf7ff";
+  }
+
+  if (position === 3) {
+    return "#f5e8ff";
+  }
+
+  if (position <= 5) {
+    return "#ead7ff";
+  }
+
+  return "#dec2fb";
 }
 
 function PatientListSkeleton() {
