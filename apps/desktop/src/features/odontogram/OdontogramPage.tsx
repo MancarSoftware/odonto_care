@@ -520,27 +520,27 @@ function OdontogramSvg({
   return (
     <svg
       aria-label="Odontograma interactivo"
-      className={cn("h-auto w-full", isLoading && "animate-pulse opacity-60")}
+      className={cn("h-auto min-h-[390px] w-full", isLoading && "animate-pulse opacity-60")}
       role="img"
-      viewBox="0 0 780 360"
+      viewBox="0 0 780 390"
     >
-      <rect fill="transparent" height="360" rx="16" width="780" />
+      <rect fill="transparent" height="390" rx="16" width="780" />
       <path
-        d="M120 166 C210 132, 300 120, 390 120 C480 120, 570 132, 660 166"
+        d="M92 160 C210 116, 300 104, 390 104 C480 104, 570 116, 688 160"
         fill="none"
         stroke="hsl(var(--border))"
         strokeDasharray="8 10"
         strokeWidth="2"
       />
       <path
-        d="M120 198 C210 232, 300 244, 390 244 C480 244, 570 232, 660 198"
+        d="M92 230 C210 274, 300 286, 390 286 C480 286, 570 274, 688 230"
         fill="none"
         stroke="hsl(var(--border))"
         strokeDasharray="8 10"
         strokeWidth="2"
       />
-      <TextLabel x={390} y={40} value="Maxilar superior" />
-      <TextLabel x={390} y={338} value="Mandibula inferior" />
+      <TextLabel x={390} y={34} value="Maxilar superior" />
+      <TextLabel x={390} y={372} value="Mandibula inferior" />
       {upperTeeth.map((toothNumber, index) => (
         <ToothShape
           index={index}
@@ -582,17 +582,18 @@ function ToothShape({
   state: ApiToothState | undefined;
   toothNumber: number;
 }) {
-  const x = 54 + index * 45;
-  const y = row === "upper" ? 74 : 210;
+  const x = 36 + index * 46;
+  const y = row === "upper" ? 62 : 238;
   const status = state?.status ?? "HEALTHY";
   const meta = statusMeta[status];
   const isMolar = [16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48].includes(toothNumber);
   const isCanine = [13, 23, 33, 43].includes(toothNumber);
   const crownWidth = isMolar ? 34 : 28;
-  const crownHeight = isCanine ? 44 : 38;
-  const crownX = x + (36 - crownWidth) / 2;
-  const rootDirection = row === "upper" ? -1 : 1;
-  const rootY = row === "upper" ? y + 8 : y + 31;
+  const crownHeight = isCanine ? 38 : 34;
+  const crownX = (42 - crownWidth) / 2;
+  const crownTop = row === "upper" ? 30 : 0;
+  const crownBottom = crownTop + crownHeight;
+  const rootStart = row === "upper" ? crownTop + 2 : crownBottom - 2;
 
   return (
     <g
@@ -605,16 +606,21 @@ function ToothShape({
       }}
       role="button"
       tabIndex={0}
+      transform={`translate(${x} ${y})`}
     >
       <title>{`Pieza ${toothNumber}: ${meta.label}`}</title>
       <motion.g
         animate={{ scale: selected ? 1.07 : 1 }}
-        transform={`translate(${x} ${y})`}
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
       >
         {isMolar ? (
           <>
             <path
-              d={`M11 ${rootY - y} C7 ${rootY - y + 16 * rootDirection}, 5 ${rootY - y + 26 * rootDirection}, 9 ${rootY - y + 32 * rootDirection}`}
+              d={
+                row === "upper"
+                  ? `M14 ${rootStart} C8 20, 8 8, 13 1`
+                  : `M14 ${rootStart} C8 46, 8 58, 13 67`
+              }
               fill="none"
               stroke="hsl(var(--muted-foreground))"
               strokeLinecap="round"
@@ -622,7 +628,11 @@ function ToothShape({
               strokeWidth="2"
             />
             <path
-              d={`M25 ${rootY - y} C29 ${rootY - y + 16 * rootDirection}, 31 ${rootY - y + 26 * rootDirection}, 27 ${rootY - y + 32 * rootDirection}`}
+              d={
+                row === "upper"
+                  ? `M28 ${rootStart} C34 20, 34 8, 29 1`
+                  : `M28 ${rootStart} C34 46, 34 58, 29 67`
+              }
               fill="none"
               stroke="hsl(var(--muted-foreground))"
               strokeLinecap="round"
@@ -632,7 +642,11 @@ function ToothShape({
           </>
         ) : (
           <path
-            d={`M18 ${rootY - y} C18 ${rootY - y + 14 * rootDirection}, 17 ${rootY - y + 24 * rootDirection}, 18 ${rootY - y + 34 * rootDirection}`}
+            d={
+              row === "upper"
+                ? `M21 ${rootStart} C21 19, 20 8, 21 1`
+                : `M21 ${rootStart} C21 46, 20 58, 21 67`
+            }
             fill="none"
             stroke="hsl(var(--muted-foreground))"
             strokeLinecap="round"
@@ -643,8 +657,8 @@ function ToothShape({
         <path
           d={
             isCanine
-              ? `M${crownX + 3} 16 C${crownX + 4} 5, ${crownX + crownWidth - 4} 5, ${crownX + crownWidth - 3} 16 L${crownX + crownWidth / 2} ${crownHeight} Z`
-              : `M${crownX + 4} 10 C${crownX + 7} 0, ${crownX + crownWidth - 7} 0, ${crownX + crownWidth - 4} 10 L${crownX + crownWidth - 2} 30 C${crownX + crownWidth - 4} ${crownHeight}, ${crownX + 4} ${crownHeight}, ${crownX + 2} 30 Z`
+              ? `M${crownX + 3} ${crownTop + 12} C${crownX + 4} ${crownTop + 1}, ${crownX + crownWidth - 4} ${crownTop + 1}, ${crownX + crownWidth - 3} ${crownTop + 12} L${crownX + crownWidth / 2} ${crownBottom} Z`
+              : `M${crownX + 4} ${crownTop + 10} C${crownX + 7} ${crownTop}, ${crownX + crownWidth - 7} ${crownTop}, ${crownX + crownWidth - 4} ${crownTop + 10} L${crownX + crownWidth - 2} ${crownTop + 28} C${crownX + crownWidth - 4} ${crownBottom}, ${crownX + 4} ${crownBottom}, ${crownX + 2} ${crownTop + 28} Z`
           }
           fill={meta.color}
           stroke={selected ? "hsl(var(--primary))" : "hsl(var(--border))"}
@@ -652,7 +666,7 @@ function ToothShape({
         />
         {status === "EXTRACTION" && (
           <path
-            d="M7 8 L29 36 M29 8 L7 36"
+            d={`M10 ${crownTop + 6} L32 ${crownBottom - 3} M32 ${crownTop + 6} L10 ${crownBottom - 3}`}
             stroke="#ef4444"
             strokeLinecap="round"
             strokeWidth="3"
@@ -660,23 +674,23 @@ function ToothShape({
         )}
         {status === "IMPLANT" && (
           <path
-            d="M18 14 L18 33 M13 24 L23 24"
+            d={`M21 ${crownTop + 7} L21 ${crownBottom - 3} M15 ${crownTop + 19} L27 ${crownTop + 19}`}
             stroke="#7c3aed"
             strokeLinecap="round"
             strokeWidth="3"
           />
         )}
-        {status === "CARIES" && <circle cx="18" cy="20" fill="#ef4444" r="4" />}
+        {status === "CARIES" && <circle cx="21" cy={crownTop + 18} fill="#ef4444" r="4" />}
         {status === "COMPLETED_TREATMENT" && (
-          <CheckCircle2 color="#059669" height="12" width="12" x="12" y="14" />
+          <CheckCircle2 color="#059669" height="12" width="12" x="15" y={crownTop + 12} />
         )}
         <text
           fill="hsl(var(--muted-foreground))"
           fontSize="11"
           fontWeight="700"
           textAnchor="middle"
-          x="18"
-          y={row === "upper" ? -10 : 62}
+          x="21"
+          y={row === "upper" ? 82 : -12}
         >
           {toothNumber}
         </text>
