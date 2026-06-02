@@ -5,6 +5,7 @@ import { LoginPage } from "./features/auth/LoginPage";
 import type { AuthenticatedUser, LoginResponse } from "./features/auth/types";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import type { AppSectionId } from "./features/navigation/sections";
+import { OdontogramPage } from "./features/odontogram/OdontogramPage";
 import { PatientsPage } from "./features/patients/PatientsPage";
 import { PlaceholderPage } from "./features/placeholder/PlaceholderPage";
 
@@ -15,6 +16,7 @@ export function App() {
   const [activeSection, setActiveSection] =
     useState<AppSectionId>("dashboard");
   const [darkMode, setDarkMode] = useState(false);
+  const [patientContextId, setPatientContextId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem(TOKEN_STORAGE_KEY),
   );
@@ -40,6 +42,15 @@ export function App() {
     setToken(null);
     setUser(null);
     setActiveSection("dashboard");
+    setPatientContextId(null);
+  }
+
+  function handleSectionChange(section: AppSectionId, patientId?: string) {
+    if (patientId) {
+      setPatientContextId(patientId);
+    }
+
+    setActiveSection(section);
   }
 
   if (!token || !user) {
@@ -51,19 +62,28 @@ export function App() {
       activeSection={activeSection}
       darkMode={darkMode}
       onLogout={handleLogout}
-      onSectionChange={setActiveSection}
+      onSectionChange={(section) => handleSectionChange(section)}
       onToggleTheme={() => setDarkMode((v) => !v)}
       user={user}
     >
       {activeSection === "dashboard" && <DashboardPage />}
       {activeSection === "patients" && (
         <PatientsPage
-          onNavigate={setActiveSection}
+          onNavigate={handleSectionChange}
           onUnauthorized={handleLogout}
           token={token}
         />
       )}
-      {activeSection !== "dashboard" && activeSection !== "patients" && (
+      {activeSection === "odontogram" && (
+        <OdontogramPage
+          onUnauthorized={handleLogout}
+          patientContextId={patientContextId}
+          token={token}
+        />
+      )}
+      {activeSection !== "dashboard" &&
+        activeSection !== "patients" &&
+        activeSection !== "odontogram" && (
         <PlaceholderPage sectionId={activeSection} />
       )}
     </AppShell>

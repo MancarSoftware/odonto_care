@@ -19,6 +19,14 @@ export class OdontogramController {
     return this.odontogramService.findByPatient(patientId);
   }
 
+  @Get("teeth/:toothNumber/events")
+  findToothEvents(
+    @Param("patientId") patientId: string,
+    @Param("toothNumber") toothNumber: string,
+  ) {
+    return this.odontogramService.findToothEvents(patientId, Number(toothNumber));
+  }
+
   @Put("teeth/:toothNumber")
   @Roles(UserRole.ADMIN, UserRole.DENTIST)
   upsertTooth(

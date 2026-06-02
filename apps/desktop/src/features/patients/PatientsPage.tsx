@@ -104,7 +104,7 @@ type ClinicalEntryFormState = {
 };
 
 type PatientsPageProps = {
-  onNavigate: (section: AppSectionId) => void;
+  onNavigate: (section: AppSectionId, patientId?: string) => void;
   onUnauthorized: () => void;
   token: string;
 };
@@ -573,7 +573,7 @@ function PatientSummary({
   onCreateClinicalEntry: () => void;
   onDeleteClinicalEntry: (entryId: string) => Promise<void>;
   onDetailPanelChange: (panel: DetailPanel) => void;
-  onNavigate: (section: AppSectionId) => void;
+  onNavigate: (section: AppSectionId, patientId?: string) => void;
   patient: ApiPatientDetail;
 }) {
   const status = getPatientStatus(patient);
@@ -663,11 +663,11 @@ function PatientSummary({
             <FileText className="h-4 w-4" />
             Historial
           </Button>
-          <Button onClick={() => onNavigate("odontogram")} variant="outline">
+          <Button onClick={() => onNavigate("odontogram", patient.id)} variant="outline">
             <SmilePlus className="h-4 w-4" />
             Odontograma
           </Button>
-          <Button onClick={() => onNavigate("treatments")} variant="outline">
+          <Button onClick={() => onNavigate("treatments", patient.id)} variant="outline">
             <ClipboardList className="h-4 w-4" />
             Tratamientos
           </Button>

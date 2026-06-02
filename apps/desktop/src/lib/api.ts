@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? LOCAL_API_DEFAULT_URL;
 
 type ApiRequestOptions = {
   body?: unknown;
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   token?: string | undefined;
 };
 
@@ -74,6 +74,14 @@ export function apiPatch<T>(
   token?: string,
 ): Promise<T> {
   return apiRequest<T>(path, { body, method: "PATCH", token });
+}
+
+export function apiPut<T>(
+  path: string,
+  body: unknown,
+  token?: string,
+): Promise<T> {
+  return apiRequest<T>(path, { body, method: "PUT", token });
 }
 
 export function apiDelete<T>(path: string, token?: string): Promise<T> {

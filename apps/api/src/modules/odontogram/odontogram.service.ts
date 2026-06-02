@@ -15,6 +15,35 @@ export class OdontogramService {
     });
   }
 
+  findToothEvents(patientId: string, toothNumber: number) {
+    return this.prisma.toothEvent.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        author: {
+          select: {
+            fullName: true,
+            id: true,
+            role: true,
+          },
+        },
+        createdAt: true,
+        id: true,
+        notes: true,
+        status: true,
+        toothNumber: true,
+        treatment: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+      },
+      where: { patientId, toothNumber },
+      take: 25,
+    });
+  }
+
   async upsertTooth(
     patientId: string,
     toothNumber: number,
