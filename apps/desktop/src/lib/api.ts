@@ -87,3 +87,67 @@ export function apiPut<T>(
 export function apiDelete<T>(path: string, token?: string): Promise<T> {
   return apiRequest<T>(path, { method: "DELETE", token });
 }
+
+export async function apiForm<T>(
+  path: string,
+  formData: FormData,
+  token?: string,
+): Promise<T> {
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api${path}`, {
+    body: formData,
+    headers,
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function apiBlob(path: string, token?: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api${path}`, { headers });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.blob();
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+  let message = `API request failed: ${response.status}`;
+
+  try {
+    const error = (await response.json()) as { error?: unknown };
+    if (typeof error.error === "string") {
+      message = error.error;
+    } else if (
+      error.error &&
+      typeof error.error === "object" &&
+      "message" in error.error
+    ) {
+      const errorMessage = (error.error as { message?: unknown }).message;
+      message = Array.isArray(errorMessage)
+        ? errorMessage.join(", ")
+        : String(errorMessage);
+    }
+  } catch {
+    // Keep the transport-level message when the API returns no JSON body.
+  }
+
+  return message;
+}

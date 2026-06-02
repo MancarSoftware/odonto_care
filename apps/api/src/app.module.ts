@@ -12,6 +12,7 @@ import { HealthModule } from "./modules/health/health.module";
 import { MediaModule } from "./modules/media/media.module";
 import { OdontogramModule } from "./modules/odontogram/odontogram.module";
 import { PatientsModule } from "./modules/patients/patients.module";
+import { TreatmentsModule } from "./modules/treatments/treatments.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Module({
@@ -30,6 +31,7 @@ import { UsersModule } from "./modules/users/users.module";
     ClinicalHistoryModule,
     AppointmentsModule,
     OdontogramModule,
+    TreatmentsModule,
     BillingModule,
     MediaModule,
     HealthModule,

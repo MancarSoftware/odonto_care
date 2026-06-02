@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 
 import { AppShell } from "./components/layout/AppShell";
+import { AppointmentsPage } from "./features/appointments/AppointmentsPage";
 import { LoginPage } from "./features/auth/LoginPage";
 import type { AuthenticatedUser, LoginResponse } from "./features/auth/types";
+import { BillingPage } from "./features/billing/BillingPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
+import { MediaPage } from "./features/media/MediaPage";
 import type { AppSectionId } from "./features/navigation/sections";
 import { OdontogramPage } from "./features/odontogram/OdontogramPage";
 import { PatientsPage } from "./features/patients/PatientsPage";
 import { PlaceholderPage } from "./features/placeholder/PlaceholderPage";
+import { TreatmentsPage } from "./features/treatments/TreatmentsPage";
 
 const TOKEN_STORAGE_KEY = "odontocare.accessToken";
 const USER_STORAGE_KEY = "odontocare.user";
@@ -74,6 +78,13 @@ export function App() {
           token={token}
         />
       )}
+      {activeSection === "appointments" && (
+        <AppointmentsPage
+          onUnauthorized={handleLogout}
+          patientContextId={patientContextId}
+          token={token}
+        />
+      )}
       {activeSection === "odontogram" && (
         <OdontogramPage
           onUnauthorized={handleLogout}
@@ -81,9 +92,34 @@ export function App() {
           token={token}
         />
       )}
+      {activeSection === "treatments" && (
+        <TreatmentsPage
+          onUnauthorized={handleLogout}
+          patientContextId={patientContextId}
+          token={token}
+        />
+      )}
+      {activeSection === "billing" && (
+        <BillingPage
+          onUnauthorized={handleLogout}
+          patientContextId={patientContextId}
+          token={token}
+        />
+      )}
+      {activeSection === "media" && (
+        <MediaPage
+          onUnauthorized={handleLogout}
+          patientContextId={patientContextId}
+          token={token}
+        />
+      )}
       {activeSection !== "dashboard" &&
         activeSection !== "patients" &&
-        activeSection !== "odontogram" && (
+        activeSection !== "appointments" &&
+        activeSection !== "odontogram" &&
+        activeSection !== "treatments" &&
+        activeSection !== "billing" &&
+        activeSection !== "media" && (
         <PlaceholderPage sectionId={activeSection} />
       )}
     </AppShell>

@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { UserRole } from "@prisma/client";
 
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
@@ -8,6 +18,7 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import type { AuthenticatedUser } from "../auth/types";
 import { AppointmentsService } from "./appointments.service";
 import { CreateAppointmentDto } from "./dto/create-appointment.dto";
+import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 
 @Controller("appointments")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,5 +37,21 @@ export class AppointmentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.appointmentsService.create(dto, user.id);
+  }
+
+  @Patch(":id")
+  @Roles(UserRole.ADMIN, UserRole.DENTIST, UserRole.RECEPTION)
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateAppointmentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.appointmentsService.update(id, dto, user.id);
+  }
+
+  @Delete(":id")
+  @Roles(UserRole.ADMIN, UserRole.DENTIST, UserRole.RECEPTION)
+  remove(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.appointmentsService.softDelete(id, user.id);
   }
 }

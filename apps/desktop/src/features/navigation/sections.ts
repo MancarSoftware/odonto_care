@@ -4,8 +4,8 @@ import {
   CircleDollarSign,
   ClipboardList,
   FileBarChart,
+  Images,
   LayoutDashboard,
-  Package,
   Settings,
   SmilePlus,
   UsersRound,
@@ -18,7 +18,7 @@ export const appSections = [
   { id: "odontogram", label: "Odontograma", icon: SmilePlus },
   { id: "treatments", label: "Tratamientos", icon: ClipboardList },
   { id: "billing", label: "Pagos", icon: CircleDollarSign },
-  { id: "inventory", label: "Inventario", icon: Package },
+  { id: "media", label: "Imagenes", icon: Images },
   { id: "reports", label: "Reportes", icon: FileBarChart },
   { id: "settings", label: "Configuracion", icon: Settings },
 ] as const satisfies ReadonlyArray<{
