@@ -4,12 +4,15 @@ import {
   FileImage,
   FileText,
   Images,
+  LoaderCircle,
   Maximize2,
   Plus,
   Search,
   Trash2,
   UploadCloud,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -75,12 +78,16 @@ export function MediaPage({
   const [assets, setAssets] = useState<ApiMediaAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [patients, setPatients] = useState<ApiPatient[]>([]);
+  const [previewAsset, setPreviewAsset] = useState<ApiMediaAsset | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
     patientContextId,
   );
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     void loadPatients();
@@ -96,6 +103,14 @@ export function MediaPage({
     void loadAssets(selectedPatientId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatientId, token]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const selectedPatient = patients.find((patient) => patient.id === selectedPatientId);
   const filteredAssets = useMemo(() => {
@@ -182,15 +197,48 @@ export function MediaPage({
 
   async function handleOpen(asset: ApiMediaAsset) {
     setError(null);
+    setPreviewAsset(asset);
+    setPreviewUrl(null);
+    setZoom(1);
+    setIsPreviewLoading(true);
+
+    try {
+      const blob = await apiBlob(`/media/${asset.id}/file`, token);
+      const normalizedBlob =
+        blob.type === asset.mimeType
+          ? blob
+          : new Blob([await blob.arrayBuffer()], { type: asset.mimeType });
+      setPreviewUrl(URL.createObjectURL(normalizedBlob));
+    } catch (requestError) {
+      setPreviewAsset(null);
+      handleRequestError(requestError);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  }
+
+  async function handleDownload(asset: ApiMediaAsset) {
+    setError(null);
 
     try {
       const blob = await apiBlob(`/media/${asset.id}/file`, token);
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = getDownloadName(asset);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
     } catch (requestError) {
       handleRequestError(requestError);
     }
+  }
+
+  function closePreview() {
+    setPreviewAsset(null);
+    setPreviewUrl(null);
+    setZoom(1);
   }
 
   async function handleDelete(id: string) {
@@ -332,6 +380,7 @@ export function MediaPage({
                     index={index}
                     key={asset.id}
                     onDelete={handleDelete}
+                    onDownload={handleDownload}
                     onOpen={handleOpen}
                   />
                 ))}
@@ -349,6 +398,19 @@ export function MediaPage({
           patients={patients}
         />
       )}
+
+      {previewAsset && (
+        <MediaPreviewModal
+          asset={previewAsset}
+          isLoading={isPreviewLoading}
+          onClose={closePreview}
+          onDownload={() => void handleDownload(previewAsset)}
+          onZoomIn={() => setZoom((value) => Math.min(value + 0.25, 3))}
+          onZoomOut={() => setZoom((value) => Math.max(value - 0.25, 0.5))}
+          url={previewUrl}
+          zoom={zoom}
+        />
+      )}
     </div>
   );
 }
@@ -357,11 +419,13 @@ function MediaCard({
   asset,
   index,
   onDelete,
+  onDownload,
   onOpen,
 }: {
   asset: ApiMediaAsset;
   index: number;
   onDelete: (id: string) => Promise<void>;
+  onDownload: (asset: ApiMediaAsset) => Promise<void>;
   onOpen: (asset: ApiMediaAsset) => Promise<void>;
 }) {
   const Icon = asset.type === "PDF" || asset.type === "DOCUMENT" ? FileText : FileImage;
@@ -400,8 +464,8 @@ function MediaCard({
             <Maximize2 className="h-4 w-4" />
           </Button>
           <Button
-            aria-label="Descargar o ver archivo"
-            onClick={() => void onOpen(asset)}
+            aria-label="Descargar archivo"
+            onClick={() => void onDownload(asset)}
             size="icon"
             variant="outline"
           >
@@ -418,6 +482,147 @@ function MediaCard({
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function MediaPreviewModal({
+  asset,
+  isLoading,
+  onClose,
+  onDownload,
+  onZoomIn,
+  onZoomOut,
+  url,
+  zoom,
+}: {
+  asset: ApiMediaAsset;
+  isLoading: boolean;
+  onClose: () => void;
+  onDownload: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  url: string | null;
+  zoom: number;
+}) {
+  const isImage = asset.mimeType.startsWith("image/");
+  const isPdf = asset.mimeType === "application/pdf" || asset.type === "PDF";
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-foreground/75 backdrop-blur-sm">
+      <div className="flex min-h-20 items-center justify-between gap-4 border-b border-white/10 bg-card px-5 py-4">
+        <div className="min-w-0">
+          <div className="truncate text-base font-extrabold text-foreground">
+            {asset.label || "Archivo clinico"}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-muted-foreground">
+            {typeLabels[asset.type]} · {formatFileSize(asset.sizeBytes)}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isImage && (
+            <>
+              <Button
+                aria-label="Alejar imagen"
+                disabled={zoom <= 0.5}
+                onClick={onZoomOut}
+                size="icon"
+                title="Alejar"
+                variant="outline"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <div className="w-14 text-center text-xs font-bold text-muted-foreground">
+                {Math.round(zoom * 100)}%
+              </div>
+              <Button
+                aria-label="Acercar imagen"
+                disabled={zoom >= 3}
+                onClick={onZoomIn}
+                size="icon"
+                title="Acercar"
+                variant="outline"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          <Button
+            aria-label="Descargar archivo"
+            onClick={onDownload}
+            size="icon"
+            title="Descargar"
+            variant="outline"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            aria-label="Cerrar visor"
+            onClick={onClose}
+            size="icon"
+            title="Cerrar"
+            variant="ghost"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto bg-black/35 p-5">
+        {isLoading && (
+          <div className="grid h-full min-h-[360px] place-items-center text-white">
+            <div className="flex items-center gap-3 text-sm font-semibold">
+              <LoaderCircle className="h-5 w-5 animate-spin" />
+              Cargando archivo...
+            </div>
+          </div>
+        )}
+
+        {!isLoading && url && isImage && (
+          <div className="flex min-h-full min-w-full items-center justify-center">
+            <img
+              alt={asset.label || "Imagen clinica"}
+              className="block max-h-none max-w-none rounded-md bg-white object-contain shadow-2xl transition-transform duration-200"
+              draggable={false}
+              src={url}
+              style={{
+                maxHeight: zoom <= 1 ? `${90 * zoom}vh` : "none",
+                maxWidth: zoom <= 1 ? `${90 * zoom}vw` : "none",
+                transform: zoom > 1 ? `scale(${zoom})` : undefined,
+                transformOrigin: "center",
+              }}
+            />
+          </div>
+        )}
+
+        {!isLoading && url && isPdf && (
+          <iframe
+            className="h-full min-h-[720px] w-full rounded-md border-0 bg-white"
+            src={url}
+            title={asset.label || "Documento PDF"}
+          />
+        )}
+
+        {!isLoading && url && !isImage && !isPdf && (
+          <div className="grid h-full min-h-[360px] place-items-center">
+            <div className="max-w-md rounded-lg border border-white/15 bg-card p-8 text-center shadow-soft">
+              <FileText className="mx-auto h-10 w-10 text-primary" />
+              <div className="mt-4 text-base font-bold text-foreground">
+                Vista previa no disponible
+              </div>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Este tipo de documento debe descargarse para abrirlo con su
+                aplicacion correspondiente.
+              </p>
+              <Button className="mt-5" onClick={onDownload}>
+                <Download className="h-4 w-4" />
+                Descargar archivo
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -681,4 +886,27 @@ function formatFileSize(size: number | null): string {
   }
 
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function getDownloadName(asset: ApiMediaAsset): string {
+  const label = (asset.label || `archivo-${asset.id}`)
+    .replace(/[<>:"/\\|?*]+/g, "-")
+    .trim();
+
+  if (/\.[a-z0-9]{2,5}$/i.test(label)) {
+    return label;
+  }
+
+  return `${label}${extensionFromMime(asset.mimeType)}`;
+}
+
+function extensionFromMime(mimeType: string): string {
+  const extensions: Record<string, string> = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+  };
+
+  return extensions[mimeType] ?? "";
 }
