@@ -6,6 +6,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { AppointmentsModule } from "./modules/appointments/appointments.module";
 import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { BackupsModule } from "./modules/backups/backups.module";
 import { BillingModule } from "./modules/billing/billing.module";
 import { ClinicalHistoryModule } from "./modules/clinical-history/clinical-history.module";
 import { HealthModule } from "./modules/health/health.module";
@@ -30,6 +31,7 @@ import { UsersModule } from "./modules/users/users.module";
     AuditModule,
     UsersModule,
     AuthModule,
+    BackupsModule,
     PatientsModule,
     ClinicalHistoryModule,
     AppointmentsModule,

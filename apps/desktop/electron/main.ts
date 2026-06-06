@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -45,6 +45,15 @@ function createMainWindow(): void {
 app.setAppUserModelId("com.odontocare.desktop");
 
 app.whenReady().then(() => {
+  ipcMain.handle("backups:choose-directory", async () => {
+    const selection = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory"],
+      title: "Seleccionar carpeta de backups",
+    });
+
+    return selection.canceled ? null : (selection.filePaths[0] ?? null);
+  });
+
   createMainWindow();
 
   app.on("activate", () => {

@@ -2,6 +2,7 @@
 
 interface Window {
   odontoCare?: {
+    chooseBackupDirectory: () => Promise<string | null>;
     platform: string;
     versions: {
       chrome: string;

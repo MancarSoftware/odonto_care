@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import {
   Building2,
   Check,
+  DatabaseBackup,
   History,
   KeyRound,
   Mail,
@@ -28,8 +29,9 @@ import { Input } from "@/components/ui/input";
 import type { AuthenticatedUser } from "@/features/auth/types";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { BackupsPanel } from "./BackupsPanel";
 
-type SettingsTab = "clinic" | "users" | "audit";
+type SettingsTab = "clinic" | "users" | "backups" | "audit";
 type UserRole = AuthenticatedUser["role"];
 
 type ClinicSettings = {
@@ -354,6 +356,12 @@ export function SettingsPage({
   }> = [
     { id: "clinic", icon: Building2, label: "Clinica" },
     { id: "users", icon: UsersRound, label: "Usuarios", restricted: true },
+    {
+      id: "backups",
+      icon: DatabaseBackup,
+      label: "Respaldos",
+      restricted: true,
+    },
     { id: "audit", icon: History, label: "Auditoria", restricted: true },
   ];
 
@@ -368,7 +376,7 @@ export function SettingsPage({
           Configuracion
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gestiona la identidad de la clinica, accesos y trazabilidad.
+          Gestiona la identidad de la clinica, accesos, respaldos y trazabilidad.
         </p>
       </section>
 
@@ -430,6 +438,10 @@ export function SettingsPage({
           onQueryChange={setAuditQuery}
           query={auditQuery}
         />
+      )}
+
+      {activeTab === "backups" && isAdmin && (
+        <BackupsPanel onUnauthorized={onUnauthorized} token={token} />
       )}
 
       {isUserModalOpen && (
