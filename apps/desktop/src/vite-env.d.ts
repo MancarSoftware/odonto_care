@@ -2,6 +2,7 @@
 
 interface Window {
   odontoCare?: {
+    apiBaseUrl: string;
     chooseBackupDirectory: () => Promise<string | null>;
     platform: string;
     versions: {

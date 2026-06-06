@@ -101,14 +101,28 @@ export class BackupsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getSettings() {
-    return this.prisma.backupSettings.upsert({
+    const configuredDirectory =
+      this.config.getOrThrow<string>("BACKUPS_DIR");
+    const settings = await this.prisma.backupSettings.upsert({
       create: {
-        backupDirectory: this.config.getOrThrow<string>("BACKUPS_DIR"),
+        backupDirectory: configuredDirectory,
         id: PRIMARY_SETTINGS_ID,
       },
       update: {},
       where: { id: PRIMARY_SETTINGS_ID },
     });
+
+    if (
+      settings.backupDirectory === "C:/OdontoSystem/backups" &&
+      resolve(configuredDirectory) !== resolve(settings.backupDirectory)
+    ) {
+      return this.prisma.backupSettings.update({
+        data: { backupDirectory: configuredDirectory },
+        where: { id: PRIMARY_SETTINGS_ID },
+      });
+    }
+
+    return settings;
   }
 
   async updateSettings(dto: UpdateBackupSettingsDto, actorId: string) {
@@ -156,9 +170,10 @@ export class BackupsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async createManualBackup(actorId: string) {
-    return this.withOperationLock(() =>
+    const job = await this.withOperationLock(() =>
       this.createBackup(BackupSource.MANUAL, actorId),
     );
+    return normalizeJob(job);
   }
 
   async importBackup(file: ImportedBackupFile | undefined, actorId: string) {
@@ -486,6 +501,30 @@ export class BackupsService implements OnModuleInit, OnModuleDestroy {
 
   private async dumpDatabase(outputPath: string) {
     const database = databaseConnection(this.config);
+
+    if (this.config.get<string>("DATABASE_TOOLS_MODE") === "native") {
+      await runProcessToFile(
+        nativePostgresTool(this.config, "pg_dump"),
+        [
+          "--host",
+          database.host,
+          "--port",
+          String(database.port),
+          "--username",
+          database.user,
+          "--dbname",
+          database.database,
+          "--clean",
+          "--if-exists",
+          "--no-owner",
+          "--no-privileges",
+        ],
+        outputPath,
+        { PGPASSWORD: database.password },
+      );
+      return;
+    }
+
     await runProcessToFile(
       "docker",
       [
@@ -507,6 +546,28 @@ export class BackupsService implements OnModuleInit, OnModuleDestroy {
 
   private async restoreDatabase(inputPath: string) {
     const database = databaseConnection(this.config);
+
+    if (this.config.get<string>("DATABASE_TOOLS_MODE") === "native") {
+      await runProcessFromFile(
+        nativePostgresTool(this.config, "psql"),
+        [
+          "--host",
+          database.host,
+          "--port",
+          String(database.port),
+          "--username",
+          database.user,
+          "--dbname",
+          database.database,
+          "-v",
+          "ON_ERROR_STOP=1",
+        ],
+        inputPath,
+        { PGPASSWORD: database.password },
+      );
+      return;
+    }
+
     await runProcessFromFile(
       "docker",
       [
@@ -644,8 +705,20 @@ function databaseConnection(config: ConfigService) {
   const url = new URL(config.getOrThrow<string>("DATABASE_URL"));
   return {
     database: decodeURIComponent(url.pathname.replace(/^\//, "")),
+    host: url.hostname,
+    password: decodeURIComponent(url.password),
+    port: Number(url.port || "5432"),
     user: decodeURIComponent(url.username),
   };
+}
+
+function nativePostgresTool(config: ConfigService, tool: "pg_dump" | "psql") {
+  const binDirectory = config.getOrThrow<string>("PG_BIN_DIR");
+  if (!binDirectory.trim()) {
+    throw new Error("PG_BIN_DIR no esta configurado");
+  }
+
+  return join(binDirectory, process.platform === "win32" ? `${tool}.exe` : tool);
 }
 
 function isAutomaticBackupDue(settings: {
@@ -822,9 +895,11 @@ function runProcessToFile(
   command: string,
   args: string[],
   outputPath: string,
+  environment: NodeJS.ProcessEnv = {},
 ) {
   return new Promise<void>((resolvePromise, reject) => {
     const child = spawn(command, args, {
+      env: { ...process.env, ...environment },
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -864,9 +939,11 @@ function runProcessFromFile(
   command: string,
   args: string[],
   inputPath: string,
+  environment: NodeJS.ProcessEnv = {},
 ) {
   return new Promise<void>((resolvePromise, reject) => {
     const child = spawn(command, args, {
+      env: { ...process.env, ...environment },
       windowsHide: true,
       stdio: ["pipe", "ignore", "pipe"],
     });

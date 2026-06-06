@@ -8,6 +8,7 @@ import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BackupsModule } from "./modules/backups/backups.module";
 import { BillingModule } from "./modules/billing/billing.module";
+import { BootstrapModule } from "./modules/bootstrap/bootstrap.module";
 import { ClinicalHistoryModule } from "./modules/clinical-history/clinical-history.module";
 import { HealthModule } from "./modules/health/health.module";
 import { MediaModule } from "./modules/media/media.module";
@@ -31,6 +32,7 @@ import { UsersModule } from "./modules/users/users.module";
     AuditModule,
     UsersModule,
     AuthModule,
+    BootstrapModule,
     BackupsModule,
     PatientsModule,
     ClinicalHistoryModule,

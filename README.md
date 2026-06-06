@@ -48,4 +48,20 @@ Sistema odontologico desktop profesional para clinicas, construido como aplicaci
 
 ## Nota de instalacion local
 
-La aplicacion esta pensada para funcionar offline. En produccion, PostgreSQL se instalara como dependencia local del sistema o servicio Windows, y Electron iniciara el backend NestJS embebido.
+La aplicacion funciona offline con dos modos:
+
+- Desarrollo: PostgreSQL se ejecuta con Docker y `npm run dev`.
+- Produccion: Electron administra PostgreSQL, migraciones y NestJS desde el
+  propio instalador.
+
+Los datos de produccion se conservan en
+`C:\ProgramData\OdontoCare` y el desinstalador no los elimina.
+
+Para preparar el instalador:
+
+1. Coloca la distribucion PostgreSQL 16 x64 en `vendor/postgresql`.
+2. Ejecuta `npm run runtime:verify`.
+3. Genera el instalador con `npm run package:win`.
+
+El empaquetado se detiene si PostgreSQL esta incompleto, evitando distribuir
+un ejecutable que no pueda iniciar la base de datos.

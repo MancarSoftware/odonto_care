@@ -11,6 +11,10 @@
     "dev": "concurrently -k -n API,DESKTOP -c cyan,magenta \"npm run dev -w @odontocare/api\" \"npm run dev -w @odontocare/desktop\"",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "runtime:build": "npm run build -w @odontocare/api && node scripts/build-production-runtime.mjs",
+    "runtime:verify": "node scripts/verify-postgresql-runtime.mjs",
+    "package:win": "npm run runtime:build && npm run runtime:verify && npm run package -w @odontocare/desktop",
+    "package:win:dir": "npm run runtime:build && npm run runtime:verify && npm run package:dir -w @odontocare/desktop",
     "db:generate": "npm run prisma:generate -w @odontocare/database",
     "db:migrate": "npm run prisma:migrate -w @odontocare/database",
     "db:studio": "npm run prisma:studio -w @odontocare/database",
@@ -19,6 +23,7 @@
   "devDependencies": {
     "concurrently": "^10.0.1",
     "dotenv-cli": "^11.0.0",
+    "esbuild": "^0.28.0",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3"
   }

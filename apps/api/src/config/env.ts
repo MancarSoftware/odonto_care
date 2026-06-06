@@ -8,7 +8,11 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("8h"),
   UPLOADS_DIR: z.string().default("C:/OdontoSystem/uploads"),
   BACKUPS_DIR: z.string().default("C:/OdontoSystem/backups"),
+  DATABASE_TOOLS_MODE: z.enum(["docker", "native"]).default("docker"),
+  PG_BIN_DIR: z.string().default(""),
   POSTGRES_CONTAINER: z.string().default("odontocare-postgres"),
+  BOOTSTRAP_ADMIN_EMAIL: z.string().email().optional(),
+  BOOTSTRAP_ADMIN_PASSWORD: z.string().min(12).optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

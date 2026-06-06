@@ -10,3 +10,6 @@ coverage/
 .DS_Store
 Thumbs.db
 apps/desktop/release/
+apps/desktop/runtime/
+vendor/postgresql/*
+!vendor/postgresql/README.md
