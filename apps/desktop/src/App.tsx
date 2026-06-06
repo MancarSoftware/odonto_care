@@ -12,6 +12,7 @@ import { OdontogramPage } from "./features/odontogram/OdontogramPage";
 import { PatientsPage } from "./features/patients/PatientsPage";
 import { PlaceholderPage } from "./features/placeholder/PlaceholderPage";
 import { ReportsPage } from "./features/reports/ReportsPage";
+import { SettingsPage } from "./features/settings/SettingsPage";
 import { TreatmentsPage } from "./features/treatments/TreatmentsPage";
 
 const TOKEN_STORAGE_KEY = "odontocare.accessToken";
@@ -117,6 +118,13 @@ export function App() {
       {activeSection === "reports" && (
         <ReportsPage onUnauthorized={handleLogout} token={token} />
       )}
+      {activeSection === "settings" && (
+        <SettingsPage
+          currentUser={user}
+          onUnauthorized={handleLogout}
+          token={token}
+        />
+      )}
       {activeSection !== "dashboard" &&
         activeSection !== "patients" &&
         activeSection !== "appointments" &&
@@ -124,7 +132,8 @@ export function App() {
         activeSection !== "treatments" &&
         activeSection !== "billing" &&
         activeSection !== "media" &&
-        activeSection !== "reports" && (
+        activeSection !== "reports" &&
+        activeSection !== "settings" && (
         <PlaceholderPage sectionId={activeSection} />
       )}
     </AppShell>

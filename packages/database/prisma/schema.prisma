@@ -332,3 +332,19 @@ model BackupJob {
   @@index([status, createdAt])
   @@map("backup_jobs")
 }
+
+model ClinicSettings {
+  id                     String   @id @default("primary") @db.VarChar(32)
+  clinicName             String   @default("OdontoCare") @map("clinic_name") @db.VarChar(160)
+  taxId                  String?  @map("tax_id") @db.VarChar(40)
+  phone                  String?  @db.VarChar(40)
+  email                  String?  @db.VarChar(180)
+  address                String?  @db.VarChar(240)
+  currency               String   @default("USD") @db.VarChar(8)
+  timezone               String   @default("America/Guayaquil") @db.VarChar(80)
+  appointmentDurationMin Int      @default(30) @map("appointment_duration_min")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("clinic_settings")
+}

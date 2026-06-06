@@ -13,6 +13,7 @@ import { MediaModule } from "./modules/media/media.module";
 import { OdontogramModule } from "./modules/odontogram/odontogram.module";
 import { PatientsModule } from "./modules/patients/patients.module";
 import { ReportsModule } from "./modules/reports/reports.module";
+import { SettingsModule } from "./modules/settings/settings.module";
 import { TreatmentsModule } from "./modules/treatments/treatments.module";
 import { UsersModule } from "./modules/users/users.module";
 
@@ -36,6 +37,7 @@ import { UsersModule } from "./modules/users/users.module";
     BillingModule,
     MediaModule,
     ReportsModule,
+    SettingsModule,
     HealthModule,
   ],
 })
