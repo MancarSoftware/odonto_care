@@ -6,6 +6,7 @@ import {
   Clock3,
   Plus,
   RotateCcw,
+  Search,
   Trash2,
   X,
 } from "lucide-react";
@@ -89,6 +90,7 @@ export function AppointmentsPage({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [patients, setPatients] = useState<ApiPatient[]>([]);
+  const [query, setQuery] = useState("");
 
   const weekDays = useMemo(() => buildWeek(currentDate), [currentDate]);
   const firstWeekDay = weekDays[0] ?? currentDate;
@@ -115,6 +117,29 @@ export function AppointmentsPage({
     }),
     [appointments],
   );
+
+  const filteredAppointments = useMemo(() => {
+    const search = query.trim().toLowerCase();
+
+    if (!search) {
+      return appointments;
+    }
+
+    return appointments.filter((appointment) =>
+      [
+        appointment.title,
+        appointment.notes ?? "",
+        appointment.status,
+        appointment.patient.firstName,
+        appointment.patient.lastName,
+        appointment.patient.code,
+        formatTimeRange(appointment.startsAt, appointment.endsAt),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(search),
+    );
+  }, [appointments, query]);
 
   async function loadPatients() {
     setError(null);
@@ -261,7 +286,16 @@ export function AppointmentsPage({
               {rangeLabel}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <div className="relative min-w-[240px] flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-11"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar cita o paciente"
+                value={query}
+              />
+            </div>
             <Button
               onClick={() => setCurrentDate((date) => addDays(date, -7))}
               variant="outline"
@@ -283,7 +317,7 @@ export function AppointmentsPage({
             <div className="grid min-w-[1120px] grid-cols-7 gap-3">
               {weekDays.map((day) => (
                 <DayColumn
-                  appointments={appointments.filter((appointment) =>
+                  appointments={filteredAppointments.filter((appointment) =>
                     isSameDate(new Date(appointment.startsAt), day),
                   )}
                   day={day}

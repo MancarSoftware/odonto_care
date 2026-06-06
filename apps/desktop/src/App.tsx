@@ -68,8 +68,9 @@ export function App() {
       activeSection={activeSection}
       darkMode={darkMode}
       onLogout={handleLogout}
-      onSectionChange={(section) => handleSectionChange(section)}
+      onSectionChange={handleSectionChange}
       onToggleTheme={() => setDarkMode((v) => !v)}
+      token={token}
       user={user}
     >
       {activeSection === "dashboard" && <DashboardPage />}

@@ -10,6 +10,7 @@ import {
   Phone,
   Plus,
   Save,
+  Search,
   Settings,
   ShieldCheck,
   Trash2,
@@ -117,6 +118,8 @@ export function SettingsPage({
   const [isSavingClinic, setIsSavingClinic] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [passwordUser, setPasswordUser] = useState<ApiUser | null>(null);
+  const [auditQuery, setAuditQuery] = useState("");
+  const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<ApiUser[]>([]);
 
   useEffect(() => {
@@ -148,6 +151,48 @@ export function SettingsPage({
     }),
     [users],
   );
+
+  const filteredUsers = useMemo(() => {
+    const query = userQuery.trim().toLowerCase();
+
+    if (!query) {
+      return users;
+    }
+
+    return users.filter((user) =>
+      [
+        user.fullName,
+        user.email,
+        user.role,
+        roleLabels[user.role],
+        user.isActive ? "activo" : "inactivo",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [userQuery, users]);
+
+  const filteredAuditLogs = useMemo(() => {
+    const query = auditQuery.trim().toLowerCase();
+
+    if (!query) {
+      return auditLogs;
+    }
+
+    return auditLogs.filter((log) =>
+      [
+        actionLabels[log.action] ?? log.action,
+        log.entity,
+        formatEntity(log.entity),
+        log.actor?.fullName ?? "sistema",
+        log.actor?.email ?? "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [auditLogs, auditQuery]);
 
   async function loadClinic() {
     setError(null);
@@ -371,13 +416,20 @@ export function SettingsPage({
           onCreate={() => setIsUserModalOpen(true)}
           onDelete={handleDeleteUser}
           onEdit={setEditingUser}
+          onQueryChange={setUserQuery}
+          query={userQuery}
           stats={userStats}
-          users={users}
+          users={filteredUsers}
         />
       )}
 
       {activeTab === "audit" && isAdmin && (
-        <AuditPanel isLoading={isLoading} logs={auditLogs} />
+        <AuditPanel
+          isLoading={isLoading}
+          logs={filteredAuditLogs}
+          onQueryChange={setAuditQuery}
+          query={auditQuery}
+        />
       )}
 
       {isUserModalOpen && (
@@ -577,6 +629,8 @@ function UsersPanel({
   onCreate,
   onDelete,
   onEdit,
+  onQueryChange,
+  query,
   stats,
   users,
 }: {
@@ -586,6 +640,8 @@ function UsersPanel({
   onCreate: () => void;
   onDelete: (user: ApiUser) => Promise<void>;
   onEdit: (user: ApiUser) => void;
+  onQueryChange: (query: string) => void;
+  query: string;
   stats: { active: number; admins: number; dentists: number; total: number };
   users: ApiUser[];
 }) {
@@ -599,17 +655,28 @@ function UsersPanel({
       </section>
 
       <Card>
-        <CardHeader className="justify-between">
+        <CardHeader className="flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Cuentas y permisos</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
               Los permisos se aplican en la API segun el rol asignado.
             </p>
           </div>
-          <Button onClick={onCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo usuario
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <div className="relative min-w-[250px] flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-11"
+                onChange={(event) => onQueryChange(event.target.value)}
+                placeholder="Buscar usuario, correo o rol"
+                value={query}
+              />
+            </div>
+            <Button onClick={onCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo usuario
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {isLoading && <SettingsSkeleton compact />}
@@ -697,18 +764,31 @@ function UsersPanel({
 function AuditPanel({
   isLoading,
   logs,
+  onQueryChange,
+  query,
 }: {
   isLoading: boolean;
   logs: AuditLog[];
+  onQueryChange: (query: string) => void;
+  query: string;
 }) {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <CardTitle>Actividad reciente</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
             Registro de cambios sensibles realizados en el sistema.
           </p>
+        </div>
+        <div className="relative w-full md:w-[340px]">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-11"
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Buscar accion, usuario o modulo"
+            value={query}
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
