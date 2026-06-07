@@ -2,6 +2,7 @@ import { AppointmentStatus } from "@prisma/client";
 import {
   IsDateString,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
@@ -15,10 +16,11 @@ export class UpdateAppointmentDto {
 
   @IsOptional()
   @IsUUID()
-  doctorId?: string;
+  doctorId?: string | null;
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(160)
   title?: string;
 
@@ -37,9 +39,9 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @IsString()
   @MaxLength(24)
-  color?: string;
+  color?: string | null;
 
   @IsOptional()
   @IsString()
-  notes?: string;
+  notes?: string | null;
 }

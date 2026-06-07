@@ -25,6 +25,11 @@ import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
+  @Get("doctors")
+  findDoctors() {
+    return this.appointmentsService.findDoctors();
+  }
+
   @Get()
   findRange(@Query("from") from?: string, @Query("to") to?: string) {
     return this.appointmentsService.findRange({ from, to });
@@ -36,7 +41,7 @@ export class AppointmentsController {
     @Body() dto: CreateAppointmentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.appointmentsService.create(dto, user.id);
+    return this.appointmentsService.create(dto, user);
   }
 
   @Patch(":id")

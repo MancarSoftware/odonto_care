@@ -110,6 +110,7 @@ export function App() {
       )}
       {activeSection === "appointments" && (
         <AppointmentsPage
+          currentUser={user}
           openCreate={quickCreateTarget === "appointment"}
           onUnauthorized={handleLogout}
           patientContextId={patientContextId}
