@@ -9,7 +9,7 @@ export class SearchService {
   async globalSearch(query: string) {
     const search = query.trim();
 
-    const [appointments, media, patients, payments, treatments] =
+    const [appointments, inventoryItems, media, patients, payments, treatments] =
       await Promise.all([
         this.prisma.appointment.findMany({
           orderBy: { startsAt: "desc" },
@@ -43,6 +43,27 @@ export class SearchService {
                   },
                 },
               },
+            ],
+          },
+        }),
+        this.prisma.inventoryItem.findMany({
+          orderBy: { name: "asc" },
+          select: {
+            currentStock: true,
+            id: true,
+            name: true,
+            sku: true,
+            type: true,
+            unit: true,
+          },
+          take: 8,
+          where: {
+            deletedAt: null,
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { sku: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+              { location: { contains: search, mode: "insensitive" } },
             ],
           },
         }),
@@ -182,6 +203,19 @@ export class SearchService {
           .filter(Boolean)
           .join(" · "),
         title: patientName(patient),
+      })),
+      ...inventoryItems.map((item) => ({
+        id: item.id,
+        kind: "inventory",
+        section: "inventory",
+        subtitle: [
+          item.sku,
+          item.type,
+          `${item.currentStock.toString()} ${item.unit}`,
+        ]
+          .filter(Boolean)
+          .join(" / "),
+        title: item.name,
       })),
       ...appointments.map((appointment) => ({
         id: appointment.id,

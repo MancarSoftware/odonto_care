@@ -108,6 +108,24 @@ enum BackupSource {
   SAFETY
 }
 
+enum InventoryItemType {
+  CONSUMABLE
+  MATERIAL
+  MEDICATION
+  INSTRUMENT
+  OTHER
+}
+
+enum InventoryMovementType {
+  PURCHASE
+  CONSUMPTION
+  RETURN
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  EXPIRED
+  DAMAGED
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique @db.VarChar(180)
@@ -120,16 +138,17 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  auditLogs            AuditLog[]      @relation("audit_actor")
-  appointmentsAsDoctor Appointment[]   @relation("appointment_doctor")
-  appointmentsCreated  Appointment[]   @relation("appointment_creator")
-  clinicalEntries      ClinicalEntry[] @relation("clinical_entry_author")
-  mediaUploads         MediaAsset[]    @relation("media_uploader")
-  paymentsCreated      Payment[]       @relation("payment_creator")
-  patientsCreated      Patient[]       @relation("patient_creator")
-  toothEvents          ToothEvent[]    @relation("tooth_event_author")
-  treatmentsAsDoctor   Treatment[]     @relation("treatment_doctor")
-  backupJobs           BackupJob[]     @relation("backup_actor")
+  auditLogs            AuditLog[]          @relation("audit_actor")
+  appointmentsAsDoctor Appointment[]       @relation("appointment_doctor")
+  appointmentsCreated  Appointment[]       @relation("appointment_creator")
+  clinicalEntries      ClinicalEntry[]     @relation("clinical_entry_author")
+  mediaUploads         MediaAsset[]        @relation("media_uploader")
+  paymentsCreated      Payment[]           @relation("payment_creator")
+  patientsCreated      Patient[]           @relation("patient_creator")
+  toothEvents          ToothEvent[]        @relation("tooth_event_author")
+  treatmentsAsDoctor   Treatment[]         @relation("treatment_doctor")
+  backupJobs           BackupJob[]         @relation("backup_actor")
+  inventoryMovements   InventoryMovement[] @relation("inventory_movement_actor")
 
   @@index([role, isActive])
   @@map("users")
@@ -374,6 +393,76 @@ model BackupSettings {
   updatedAt             DateTime        @updatedAt @map("updated_at")
 
   @@map("backup_settings")
+}
+
+model Supplier {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(180)
+  taxId       String?   @map("tax_id") @db.VarChar(60)
+  contactName String?   @map("contact_name") @db.VarChar(160)
+  phone       String?   @db.VarChar(40)
+  email       String?   @db.VarChar(180)
+  address     String?   @db.VarChar(240)
+  notes       String?
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  items     InventoryItem[]
+  movements InventoryMovement[]
+
+  @@index([name])
+  @@index([deletedAt])
+  @@map("suppliers")
+}
+
+model InventoryItem {
+  id           String            @id @default(uuid()) @db.Uuid
+  supplierId   String?           @map("supplier_id") @db.Uuid
+  sku          String?           @unique @db.VarChar(80)
+  name         String            @db.VarChar(180)
+  type         InventoryItemType
+  description  String?
+  unit         String            @db.VarChar(40)
+  location     String?           @db.VarChar(120)
+  currentStock Decimal           @default(0) @map("current_stock") @db.Decimal(14, 3)
+  minimumStock Decimal           @default(0) @map("minimum_stock") @db.Decimal(14, 3)
+  unitCost     Decimal           @default(0) @map("unit_cost") @db.Decimal(14, 2)
+  deletedAt    DateTime?         @map("deleted_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  supplier  Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  movements InventoryMovement[]
+
+  @@index([name, type])
+  @@index([supplierId])
+  @@index([deletedAt])
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id             String                @id @default(uuid()) @db.Uuid
+  itemId         String                @map("item_id") @db.Uuid
+  supplierId     String?               @map("supplier_id") @db.Uuid
+  actorId        String?               @map("actor_id") @db.Uuid
+  type           InventoryMovementType
+  quantity       Decimal               @db.Decimal(14, 3)
+  previousStock  Decimal               @map("previous_stock") @db.Decimal(14, 3)
+  resultingStock Decimal               @map("resulting_stock") @db.Decimal(14, 3)
+  unitCost       Decimal?              @map("unit_cost") @db.Decimal(14, 2)
+  reference      String?               @db.VarChar(140)
+  notes          String?
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  actor    User?         @relation("inventory_movement_actor", fields: [actorId], references: [id], onDelete: SetNull)
+  item     InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  supplier Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([itemId, createdAt])
+  @@index([type, createdAt])
+  @@index([supplierId, createdAt])
+  @@map("inventory_movements")
 }
 
 model ClinicSettings {

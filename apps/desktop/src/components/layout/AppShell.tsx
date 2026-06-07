@@ -6,6 +6,7 @@ import {
   LoaderCircle,
   Menu,
   Moon,
+  PackageSearch,
   Search,
   SmilePlus,
   Stethoscope,
@@ -29,8 +30,14 @@ import { cn } from "@/lib/utils";
 
 type GlobalSearchResult = {
   id: string;
-  kind: "appointment" | "media" | "patient" | "payment" | "treatment";
-  patientId: string;
+  kind:
+    | "appointment"
+    | "inventory"
+    | "media"
+    | "patient"
+    | "payment"
+    | "treatment";
+  patientId?: string;
   section: AppSectionId;
   subtitle: string;
   title: string;
@@ -186,7 +193,7 @@ export function AppShell({
                 }}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                placeholder="Buscar pacientes, citas, tratamientos..."
+                placeholder="Buscar pacientes, citas, insumos..."
                 ref={searchInputRef}
                 spellCheck={false}
                 value={searchQuery}
@@ -305,6 +312,7 @@ function SearchResultIcon({
 }) {
   const icons = {
     appointment: CalendarDays,
+    inventory: PackageSearch,
     media: FileImage,
     patient: UserRound,
     payment: CircleDollarSign,

@@ -11,6 +11,7 @@ import { BillingModule } from "./modules/billing/billing.module";
 import { BootstrapModule } from "./modules/bootstrap/bootstrap.module";
 import { ClinicalHistoryModule } from "./modules/clinical-history/clinical-history.module";
 import { HealthModule } from "./modules/health/health.module";
+import { InventoryModule } from "./modules/inventory/inventory.module";
 import { MediaModule } from "./modules/media/media.module";
 import { OdontogramModule } from "./modules/odontogram/odontogram.module";
 import { PatientsModule } from "./modules/patients/patients.module";
@@ -40,6 +41,7 @@ import { UsersModule } from "./modules/users/users.module";
     OdontogramModule,
     TreatmentsModule,
     BillingModule,
+    InventoryModule,
     MediaModule,
     ReportsModule,
     SearchModule,

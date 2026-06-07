@@ -7,6 +7,7 @@ import type { AuthenticatedUser, LoginResponse } from "./features/auth/types";
 import { BillingPage } from "./features/billing/BillingPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { MediaPage } from "./features/media/MediaPage";
+import { InventoryPage } from "./features/inventory/InventoryPage";
 import type { AppSectionId } from "./features/navigation/sections";
 import { OdontogramPage } from "./features/odontogram/OdontogramPage";
 import { PatientsPage } from "./features/patients/PatientsPage";
@@ -116,6 +117,13 @@ export function App() {
           token={token}
         />
       )}
+      {activeSection === "inventory" && (
+        <InventoryPage
+          currentUser={user}
+          onUnauthorized={handleLogout}
+          token={token}
+        />
+      )}
       {activeSection === "reports" && (
         <ReportsPage onUnauthorized={handleLogout} token={token} />
       )}
@@ -132,6 +140,7 @@ export function App() {
         activeSection !== "odontogram" &&
         activeSection !== "treatments" &&
         activeSection !== "billing" &&
+        activeSection !== "inventory" &&
         activeSection !== "media" &&
         activeSection !== "reports" &&
         activeSection !== "settings" && (
