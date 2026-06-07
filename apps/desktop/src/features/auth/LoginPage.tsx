@@ -16,7 +16,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState("admin@odontocare.local");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [password, setPassword] = useState("Admin12345!");
+  const [password, setPassword] = useState(
+    import.meta.env.DEV ? "Admin12345!" : "",
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

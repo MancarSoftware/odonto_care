@@ -1,6 +1,6 @@
 {
   "name": "@odontocare/desktop",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Sistema odontologico desktop profesional y offline.",
   "author": "OdontoCare",
   "private": true,
@@ -51,6 +51,7 @@
       }
     ],
     "win": {
+      "icon": "public/icon.png",
       "target": [
         {
           "target": "nsis",

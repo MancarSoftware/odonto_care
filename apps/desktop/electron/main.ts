@@ -56,8 +56,24 @@ function createMainWindow(): BrowserWindow {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    if (isSafeExternalUrl(url)) {
+      void shell.openExternal(url);
+    }
     return { action: "deny" };
+  });
+
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    const allowedUrl =
+      isDevelopment && devServerUrl
+        ? url.startsWith(devServerUrl)
+        : url.startsWith("file:");
+
+    if (!allowedUrl) {
+      event.preventDefault();
+      if (isSafeExternalUrl(url)) {
+        void shell.openExternal(url);
+      }
+    }
   });
 
   if (isDevelopment && devServerUrl) {
@@ -255,4 +271,13 @@ async function startProductionRuntime() {
 async function shutdownProductionRuntime() {
   await apiRuntime?.stop();
   await postgresRuntime?.stop();
+}
+
+function isSafeExternalUrl(url: string) {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
 }

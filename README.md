@@ -46,6 +46,22 @@ Sistema odontologico desktop profesional para clinicas, construido como aplicaci
    npm run dev
    ```
 
+## Calidad y pruebas
+
+La verificacion automatizada usa una base PostgreSQL temporal e independiente.
+No modifica los datos de desarrollo ni los datos instalados de la clinica.
+
+```bash
+npm run test
+npm run verify
+```
+
+`npm run test` cubre autenticacion, roles, pacientes, historial clinico,
+odontograma, tratamientos, pagos, agenda, inventario, imagenes, reportes,
+auditoria, backups y restauracion.
+
+`npm run verify` agrega typecheck y build completo.
+
 ## Nota de instalacion local
 
 La aplicacion funciona offline con dos modos:
@@ -65,3 +81,17 @@ Para preparar el instalador:
 
 El empaquetado se detiene si PostgreSQL esta incompleto, evitando distribuir
 un ejecutable que no pueda iniciar la base de datos.
+
+Para generar y comprobar una entrega completa:
+
+```bash
+npm run release:build
+```
+
+Ese comando ejecuta pruebas, genera el instalador, inicia el ejecutable
+empaquetado con una carpeta de datos limpia y verifica PostgreSQL, API, login,
+dashboard y agenda sin depender de Node.js o Docker externos.
+
+Consulta [docs/USER_GUIDE.md](docs/USER_GUIDE.md) y
+[docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) antes de entregar una
+version a una clinica.
