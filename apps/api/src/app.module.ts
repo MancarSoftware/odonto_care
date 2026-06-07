@@ -10,6 +10,7 @@ import { BackupsModule } from "./modules/backups/backups.module";
 import { BillingModule } from "./modules/billing/billing.module";
 import { BootstrapModule } from "./modules/bootstrap/bootstrap.module";
 import { ClinicalHistoryModule } from "./modules/clinical-history/clinical-history.module";
+import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { HealthModule } from "./modules/health/health.module";
 import { InventoryModule } from "./modules/inventory/inventory.module";
 import { MediaModule } from "./modules/media/media.module";
@@ -37,6 +38,7 @@ import { UsersModule } from "./modules/users/users.module";
     BackupsModule,
     PatientsModule,
     ClinicalHistoryModule,
+    DashboardModule,
     AppointmentsModule,
     OdontogramModule,
     TreatmentsModule,

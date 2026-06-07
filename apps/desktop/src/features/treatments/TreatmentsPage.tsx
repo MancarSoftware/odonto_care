@@ -54,6 +54,7 @@ type TreatmentForm = {
 };
 
 type TreatmentsPageProps = {
+  openCreate: boolean;
   onUnauthorized: () => void;
   patientContextId: string | null;
   token: string;
@@ -77,6 +78,7 @@ const statusTone: Record<
 };
 
 export function TreatmentsPage({
+  openCreate,
   onUnauthorized,
   patientContextId,
   token,
@@ -90,6 +92,12 @@ export function TreatmentsPage({
     patientContextId,
   );
   const [treatments, setTreatments] = useState<ApiTreatment[]>([]);
+
+  useEffect(() => {
+    if (openCreate && patients.length > 0) {
+      setIsCreateOpen(true);
+    }
+  }, [openCreate, patients.length]);
 
   useEffect(() => {
     void loadPatients();

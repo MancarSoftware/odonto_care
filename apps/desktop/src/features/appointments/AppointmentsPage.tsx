@@ -57,6 +57,7 @@ type AppointmentForm = {
 };
 
 type AppointmentsPageProps = {
+  openCreate: boolean;
   onUnauthorized: () => void;
   patientContextId: string | null;
   token: string;
@@ -80,6 +81,7 @@ const statusTone: Record<
 };
 
 export function AppointmentsPage({
+  openCreate,
   onUnauthorized,
   patientContextId,
   token,
@@ -91,6 +93,12 @@ export function AppointmentsPage({
   const [isLoading, setIsLoading] = useState(true);
   const [patients, setPatients] = useState<ApiPatient[]>([]);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (openCreate && patients.length > 0) {
+      setIsCreateOpen(true);
+    }
+  }, [openCreate, patients.length]);
 
   const weekDays = useMemo(() => buildWeek(currentDate), [currentDate]);
   const firstWeekDay = weekDays[0] ?? currentDate;

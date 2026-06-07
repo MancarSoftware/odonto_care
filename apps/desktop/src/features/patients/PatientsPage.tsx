@@ -104,6 +104,7 @@ type ClinicalEntryFormState = {
 };
 
 type PatientsPageProps = {
+  openCreate: boolean;
   onNavigate: (section: AppSectionId, patientId?: string) => void;
   onUnauthorized: () => void;
   token: string;
@@ -157,6 +158,7 @@ const clinicalEntryLabels: Record<ClinicalEntryType, string> = {
 };
 
 export function PatientsPage({
+  openCreate,
   onNavigate,
   onUnauthorized,
   token,
@@ -173,6 +175,12 @@ export function PatientsPage({
   const [selectedPatient, setSelectedPatient] =
     useState<ApiPatientDetail | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (openCreate) {
+      setIsCreateOpen(true);
+    }
+  }, [openCreate]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

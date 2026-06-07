@@ -61,6 +61,7 @@ type PaymentForm = {
 };
 
 type BillingPageProps = {
+  openCreate: boolean;
   onUnauthorized: () => void;
   patientContextId: string | null;
   token: string;
@@ -89,6 +90,7 @@ const statusTone: Record<PaymentStatus, "default" | "success" | "warning" | "dan
 };
 
 export function BillingPage({
+  openCreate,
   onUnauthorized,
   patientContextId,
   token,
@@ -103,6 +105,12 @@ export function BillingPage({
     patientContextId,
   );
   const [treatments, setTreatments] = useState<ApiTreatment[]>([]);
+
+  useEffect(() => {
+    if (openCreate && patients.length > 0) {
+      setIsCreateOpen(true);
+    }
+  }, [openCreate, patients.length]);
 
   useEffect(() => {
     void loadPatients();

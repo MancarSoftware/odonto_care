@@ -5,7 +5,10 @@ import { AppointmentsPage } from "./features/appointments/AppointmentsPage";
 import { LoginPage } from "./features/auth/LoginPage";
 import type { AuthenticatedUser, LoginResponse } from "./features/auth/types";
 import { BillingPage } from "./features/billing/BillingPage";
-import { DashboardPage } from "./features/dashboard/DashboardPage";
+import {
+  DashboardPage,
+  type DashboardCreateTarget,
+} from "./features/dashboard/DashboardPage";
 import { MediaPage } from "./features/media/MediaPage";
 import { InventoryPage } from "./features/inventory/InventoryPage";
 import type { AppSectionId } from "./features/navigation/sections";
@@ -24,6 +27,8 @@ export function App() {
     useState<AppSectionId>("dashboard");
   const [darkMode, setDarkMode] = useState(false);
   const [patientContextId, setPatientContextId] = useState<string | null>(null);
+  const [quickCreateTarget, setQuickCreateTarget] =
+    useState<DashboardCreateTarget | null>(null);
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem(TOKEN_STORAGE_KEY),
   );
@@ -50,14 +55,26 @@ export function App() {
     setUser(null);
     setActiveSection("dashboard");
     setPatientContextId(null);
+    setQuickCreateTarget(null);
   }
 
   function handleSectionChange(section: AppSectionId, patientId?: string) {
-    if (patientId) {
-      setPatientContextId(patientId);
-    }
-
+    setPatientContextId(patientId ?? null);
+    setQuickCreateTarget(null);
     setActiveSection(section);
+  }
+
+  function handleDashboardCreate(target: DashboardCreateTarget) {
+    const sections: Record<DashboardCreateTarget, AppSectionId> = {
+      appointment: "appointments",
+      patient: "patients",
+      payment: "billing",
+      treatment: "treatments",
+    };
+
+    setPatientContextId(null);
+    setQuickCreateTarget(target);
+    setActiveSection(sections[target]);
   }
 
   if (!token || !user) {
@@ -74,9 +91,18 @@ export function App() {
       token={token}
       user={user}
     >
-      {activeSection === "dashboard" && <DashboardPage />}
+      {activeSection === "dashboard" && (
+        <DashboardPage
+          onCreate={handleDashboardCreate}
+          onNavigate={handleSectionChange}
+          onUnauthorized={handleLogout}
+          token={token}
+          user={user}
+        />
+      )}
       {activeSection === "patients" && (
         <PatientsPage
+          openCreate={quickCreateTarget === "patient"}
           onNavigate={handleSectionChange}
           onUnauthorized={handleLogout}
           token={token}
@@ -84,6 +110,7 @@ export function App() {
       )}
       {activeSection === "appointments" && (
         <AppointmentsPage
+          openCreate={quickCreateTarget === "appointment"}
           onUnauthorized={handleLogout}
           patientContextId={patientContextId}
           token={token}
@@ -98,6 +125,7 @@ export function App() {
       )}
       {activeSection === "treatments" && (
         <TreatmentsPage
+          openCreate={quickCreateTarget === "treatment"}
           onUnauthorized={handleLogout}
           patientContextId={patientContextId}
           token={token}
@@ -105,6 +133,7 @@ export function App() {
       )}
       {activeSection === "billing" && (
         <BillingPage
+          openCreate={quickCreateTarget === "payment"}
           onUnauthorized={handleLogout}
           patientContextId={patientContextId}
           token={token}
