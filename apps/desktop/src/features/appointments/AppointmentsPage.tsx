@@ -102,7 +102,7 @@ type AppointmentsPageProps = {
 };
 
 const START_HOUR = 7;
-const END_HOUR = 20;
+const END_HOUR = 24;
 const SLOT_MINUTES = 30;
 const SLOT_HEIGHT = 42;
 const TIME_COLUMN_WIDTH = 72;
@@ -655,9 +655,12 @@ function TimeGrid({
           <div className="relative border-r border-border" style={{ height: bodyHeight }}>
             {slots.map((slot, index) => (
               <div
-                className="absolute left-0 right-0 -translate-y-2 pr-3 text-right text-[11px] font-semibold text-muted-foreground"
+                className={cn(
+                  "absolute left-0 right-0 pr-3 text-right text-[11px] font-semibold text-muted-foreground",
+                  index > 0 && "-translate-y-2",
+                )}
                 key={slot}
-                style={{ top: index * SLOT_HEIGHT }}
+                style={{ top: index === 0 ? 8 : index * SLOT_HEIGHT }}
               >
                 {slot.endsWith(":00") ? slot : ""}
               </div>
